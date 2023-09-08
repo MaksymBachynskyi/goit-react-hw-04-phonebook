@@ -1,76 +1,52 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Filter } from 'components/filter/filter.jsx';
 import { ContactList } from '../contactList/contactList.jsx';
 import { ContactForm } from '../contactForm/contactForm.jsx';
 import { Container } from './Layout.styled';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
-  componentDidMount() {
-    const storage = JSON.parse(localStorage.getItem('contacts'));
-    if (storage) {
-      this.setState({ contacts: storage });
-    }
-  }
-  componentDidUpdate(prevState, nextState) {
-    if (nextState.contacts !== this.state.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
-  onAddNumber = newNumber => {
-    const isIcluded = this.state.contacts.some(item => {
-      return (
+export function App() {
+  const [contacts, setContacts] = useState(
+    () => JSON.parse(localStorage.getItem('contacts')) ?? []
+  );
+  const [filter, setFilter] = useState('');
+
+  useEffect(
+    () => localStorage.setItem('contacts', JSON.stringify(contacts)),
+    [contacts]
+  );
+  const onAddNumber = newNumber => {
+    const isIcluded = contacts.some(
+      item =>
         item.name.toLocaleLowerCase() === newNumber.name.toLocaleLowerCase()
-      );
-    });
+    );
     if (isIcluded) {
       alert(`${newNumber.name} is alredy in contacts`);
       return;
     }
-    this.setState(prevSetstate => {
-      return {
-        contacts: [...prevSetstate.contacts, newNumber],
-      };
-    });
+    setContacts(prevState => [...prevState, newNumber]);
   };
-  onDelete = targetId => {
-    this.setState(prevSetstate => {
-      return {
-        contacts: prevSetstate.contacts.filter(item => {
-          return item.id !== targetId;
-        }),
-      };
-    });
+
+  const onDelete = targetId => {
+    setContacts(prevState => prevState.filter(item => item.id !== targetId));
   };
-  onFilter = e => {
-    this.setState({
-      filter: e.target.value,
-    });
-  };
-  getFiltredMassive = () => {
-    return this.state.contacts.filter(item => {
+
+  const getFiltredMassive = () => {
+    return contacts.filter(item => {
       const normalize = item.name.toLowerCase();
-      const normalizeTarget = this.state.filter.toLowerCase();
+      const normalizeTarget = filter.toLowerCase();
       return normalize.includes(normalizeTarget);
     });
   };
-  render() {
-    return (
-      <Container>
-        <h1>Phonebook</h1>
-        <ContactForm onAddNumber={this.onAddNumber} />
-        <h2>Contacts</h2>
-        <Filter onFilter={this.onFilter} value={this.state.filter} />
-        {this.state.contacts.length > 0 && (
-          <ContactList
-            contacts={this.getFiltredMassive()}
-            onDelete={this.onDelete}
-          />
-        )}
-      </Container>
-    );
-  }
+
+  return (
+    <Container>
+      <h1>Phonebook</h1>
+      <ContactForm onAddNumber={onAddNumber} />
+      <h2>Contacts</h2>
+      <Filter onFilter={setFilter} value={filter} />
+      {contacts.length > 0 && (
+        <ContactList contacts={getFiltredMassive()} onDelete={onDelete} />
+      )}
+    </Container>
+  );
 }
